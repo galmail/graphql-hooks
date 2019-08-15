@@ -28,6 +28,7 @@ class GraphQLClient {
     this.url = config.url
     this.fetch = config.fetch || fetch.bind()
     this.fetchOptions = config.fetchOptions || {}
+    this.useGETForQueries = config.useGETForQueries
     this.logErrors = config.logErrors !== undefined ? config.logErrors : true
     this.onError = config.onError
   }
