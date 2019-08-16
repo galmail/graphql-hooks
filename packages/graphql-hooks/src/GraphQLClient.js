@@ -1,3 +1,4 @@
+const { URL, URLSearchParams } = require('url')
 import { extractFiles } from 'extract-files'
 
 class GraphQLClient {
@@ -25,7 +26,7 @@ class GraphQLClient {
     this.headers = config.headers || {}
     this.ssrMode = config.ssrMode
     this.ssrPromises = []
-    this.url = config.url
+    this.url = new URL(config.url)
     this.fetch = config.fetch || fetch.bind()
     this.fetchOptions = config.fetchOptions || {}
     this.useGETForQueries = config.useGETForQueries
@@ -124,8 +125,15 @@ class GraphQLClient {
   // Kudos to Jayden Seric (@jaydenseric) for this piece of code.
   // See original source: https://github.com/jaydenseric/graphql-react/blob/82d576b5fe6664c4a01cd928d79f33ddc3f7bbfd/src/universal/graphqlFetchOptions.mjs.
   getFetchOptions(operation, fetchOptionsOverrides = {}) {
+    let defaultMethod = 'POST'
+    if (
+      this.useGETForQueries &&
+      !operation.query.trim().startsWith('mutation')
+    ) {
+      defaultMethod = 'GET'
+    }
     const fetchOptions = {
-      method: 'POST',
+      method: defaultMethod,
       headers: {
         ...this.headers
       },
@@ -160,6 +168,14 @@ class GraphQLClient {
     } else {
       fetchOptions.headers['Content-Type'] = 'application/json'
       fetchOptions.body = operationJSON
+    }
+
+    if (fetchOptions.method === 'GET') {
+      const params = { query: operation.query, variables: operation.variables }
+      this.url.search = new URLSearchParams(params)
+      fetchOptions.body = null
+    } else {
+      this.url.search = null
     }
 
     return fetchOptions
